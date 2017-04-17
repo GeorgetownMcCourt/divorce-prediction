@@ -1,8 +1,8 @@
-# # Project Name: divorce-prediction
-Predicting American Divorce
+# Project Name: divorce-prediction
+##Predicting American Divorce
 
-Carlos Delgado
-Christian Ueland
+__Carlos Delgado // 
+Christian Ueland__
 ___
 
 ## Overview/Synopsis
