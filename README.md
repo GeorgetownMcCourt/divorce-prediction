@@ -1,6 +1,10 @@
 # # Project Name: divorce-prediction
 Predicting American Divorce
 
+Carlos Delgado
+Christian Ueland
+___
+
 ## Overview/Synopsis
 TODO: Description of your project (summary)
 
@@ -31,6 +35,6 @@ TODO: Write credits. Who is on the project.
 TODO: Write license if you want people to use. Take a look here:  https://choosealicense.com/
 
 
-### Commit Journal
+#### Commit Journal
 
 CD-04-17: copy and pasted instructions passed by Prof. Jeff Chen
