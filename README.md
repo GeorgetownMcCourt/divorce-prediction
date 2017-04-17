@@ -1,18 +1,19 @@
 # Project Name: divorce-prediction
 ## Predicting American Divorce
-
-__Carlos Delgado // 
-Christian Ueland__
 ___
 
 ### Overview/Synopsis
-TODO: Description of your project (summary)
+
+The goal of this project is to find a model that accurately predicts if a person is divorced (among other outcomes, single, married, widowed, etc). We think that there are a series of social, economic, racial, religious and geographic variables that relate to a certain person being divorced.
+
 
 ### Use
 TODO: Specific example of what happens in your project (e.g. what's going on under the hood)
 
 ### Data Used
-TODO: Where you got your data, description about the data
+US Household Survey:
+We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ftp.html).
+We also use a parsing script written within DOC and given by Prof Jeff Chen for public use. 
 
 ### Installation
 TODO: Describe the installation process 
@@ -24,19 +25,12 @@ Note: If you're providing a new package or software, provide examples of how to 
 
 
 ### Progress Log
-TODO: Write history in bullet form of what progress has been made and when.
+-April 17, 2017: We started wrinting our read-me file and gathering the data.
 
 ### Credits
 
-TODO: Write credits. Who is on the project.
+Credits of this work go out to Carlos Delgado and Christian Ueland.
 
 ### License
 
 TODO: Write license if you want people to use. Take a look here:  https://choosealicense.com/
-
-
-##### Commit Journal
-
-CD-04-17: copy and pasted instructions passed by Prof. Jeff Chen. 
-CD-04-17: also added names to the project
-
