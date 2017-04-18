@@ -11,13 +11,12 @@ The goal of this project is to find a model that accurately predicts if a person
 TODO: Specific example of what happens in your project (e.g. what's going on under the hood)
 
 ### Data Used
-US Household Survey:
-We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ftp.html).
-We also use a parsing script written within DOC and given by Prof Jeff Chen for public use. 
 
-### Installation
-TODO: Describe the installation process 
-Note: only for cases where you're developing a new package or software.
+We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ftp.html). We downloaded the data using a parsing script written within DOC and given by Prof Jeff Chen for public use. We modified it to get the data for the twelve months of 2016.
+
+We have approximately 1.8 million observations and 389 variables.
+
+The parsing script also creates a dictonary for these variables.
 
 ### Usage
 TODO: Write usage instructions 
