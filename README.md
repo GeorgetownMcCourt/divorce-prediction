@@ -10,6 +10,11 @@ The goal of this project is to find a model that accurately predicts if a person
 ### Use
 TODO: Specific example of what happens in your project (e.g. what's going on under the hood)
 
+We are ceating a tool that accurate predicts if your are divorced or not.
+
+We use two different models: Decision trees and Random Forest to predict...
+
+
 ### Data Used
 
 We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ftp.html). We downloaded the data using a parsing script written within DOC and given by Prof Jeff Chen for public use. We modified it to get the data for the twelve months of 2016.
@@ -25,6 +30,8 @@ Note: If you're providing a new package or software, provide examples of how to 
 
 ### Progress Log
 -April 17, 2017: We started wrinting our read-me file and gathering the data.
+-April 20, 2017: Updates on Read-me file.
+-April 24, 2017: Finishing Read-me file.
 
 ### Credits
 
