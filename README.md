@@ -33,9 +33,9 @@ Open the .R file and run the script.
 
 
 ### Progress Log
--April 17, 2017: We started wrinting our read-me file and gathering the data.
--April 20, 2017: Updates on Read-me file.
--April 24, 2017: Finishing Read-me file.
+- April 17, 2017: We started wrinting our read-me file and gathering the data.
+- April 20, 2017: Updates on Read-me file.
+- April 24, 2017: Finishing Read-me file.
 
 ### Credits
 
