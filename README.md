@@ -9,10 +9,9 @@ The goal of this project is to find a model that accurately predicts if a person
 
 ### Use
 
-We are ceating a tool that accurate predicts if your are marriage status. Wether you are divorced, single or married, this tool will predict with an accuracy in the 80s percentage, given certain characteristics.  
+We are ceating a tool that accurately predicts a person's marriage status. This tool will predict whether a person is divorced, single or married with an accuracy in the 80s percentage, given certain characteristics.
 
-We use decision trees model to predict the outcomes (divorced, single or married). We create 3 different predictions. The first one is a decision model tree with CP = 0.01 (less precise and mid computing power), the second one we use CP = 0 (most precise and really high computing power), and the third one we use optimal CP (good precision and high computing power).
-
+We use a decision tree model to predict the outcomes (divorced, single or married). We create 3 different predictions. The first one is a decision model tree with CP = 0.01 (less precise and mid computing power), the second one we use CP = 0 (most precise and really high computing power), and the third one we use optimal CP (good precision and high computing power).
 
 ### Data Used
 
