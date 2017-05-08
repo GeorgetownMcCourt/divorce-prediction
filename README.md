@@ -73,7 +73,8 @@ This file project was broken down into 7 main parts
 - 4 Downloading the data.
 - 5 Culling and cleaning the data.
 - 6 Training the model.
-- 7 Testing the model.
+- 7 Optimizing the model.
+- 8 Iterating to find the best mean F1.
 
 
 
