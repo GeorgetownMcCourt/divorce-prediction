@@ -1,0 +1,376 @@
+---
+title: "Divorce Prediction"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+This project uses machine learning with 2016 American Community Survey Data to predict the probability of divorce.
+
+### Environment Set-Up
+
+#### Variables
+First we need to set up the environment
+```{r message = FALSE}
+# start clean
+rm(list = ls())
+
+# Set working directory
+setwd("/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/")
+
+# useful libraries
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(rpart)
+library(rpart.plot)
+library(devtools)
+library(gridExtra)
+library(randomForest)
+library(plotROC)
+```
+#### Functions
+
+Set up useful functions.
+```{r}
+#Mean F1
+meanf1 <- function(actual, predicted){
+  #Mean F1 score function
+  #actual = a vector of actual labels
+  #predicted = predicted labels
+  
+  classes <- unique(actual)
+  results <- data.frame()
+  for(k in classes){
+    results <- rbind(results, 
+                     data.frame(class.name = k,
+                                weight = sum(actual == k)/length(actual),
+                                precision = sum(predicted == k &
+                                                  actual == k) / 
+                                  sum(predicted == k),
+                                recall = sum(predicted == k &
+                                               actual == k) /
+                                  sum(actual == k)))
+  }
+  results$score <- results$weight * 2 *
+    (results$precision * results$recall) /
+    (results$precision + results$recall) 
+  return(sum(results$score))
+}
+
+inter <- function(x,y,z) {
+  # Create a sequence of numbers based on the number of values you want
+  # in the sequence
+  # x,y = beginning and end of sequence
+  # z = number of intervals to produce
+  f <- c(x,y)
+  int <- abs(x - y) / z
+  d <- seq(min(f),max(f),int)
+  return(d)
+}
+```
+### Gather the Data
+
+#### Data Dictionary
+To interpret the actual data download, we first need to download the data dictionary, which will then be used to organize the data we download from the ACS API.
+```{r message = FALSE}
+###############################################################################
+# ------------------------------ Get Data Dictionary -------------------------|
+###############################################################################
+
+# download the data dictionary
+a = readLines("http://thedataweb.rm.census.gov/pub/cps/basic/201501-/January_2015_Record_Layout.txt")
+
+# shrink any tabs down to just a single tab
+str <-(gsub("\\t+","\t",a))
+
+# set up
+clean <- c()
+lengths <- c()
+
+# set up the empty data frame to populate with the data dictionary
+dic = data.frame()
+for(k in str){
+  # determine which lines are useable, and put them into the clean variable
+  if((length(grep("[0-9] {0,1}- {0,1}[0-9]", k)) > 0) && (substr(k,1,1)!="\t") && (substr(k,1,1)!="") && (substr(k,1,1)!=" \t")){
+    # assign valid lines into the clean variable
+    clean[length(clean) + 1] <- k
+    # split the valid lines into their separate counter parts
+    temp = unlist(strsplit(k,"\t"))
+    lengths[length(lengths)+1] <- length(temp)
+    # output each row of the data dictionary to have 4 columns
+    if(length(temp) %in% c(4:5)){
+      dic <- rbind(dic, data.frame(temp[1],temp[2],temp[3],temp[length(temp)]))
+    }
+  }
+}
+
+# rename the columns
+names(dic) <- c("NAME", "SIZE", "DESCRIPTION", "LOCATION")
+
+# show the first few observations of the dictionary
+head(dic)
+# output the dictionary to a csv file for easier reference
+write.csv(dic[,c("NAME", "DESCRIPTION")], file = "/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/data_dic.csv", row.names = FALSE)
+```
+#### Data Download
+
+ACS data is downloaded by the month, therefore in order to download all of the data from 2016, we need to create a for loop that collects each month's data from 2016. First we build the URL for each request, download the files, and then process the data using the data dictionary downloaded above.
+```{r}
+###############################################################################
+# ----------------------------------- Get Data -------------------------------|
+###############################################################################
+
+# ----------------------------------- Build URL -------------------------------|
+# list of months to obtain data
+mes <- c("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+baseurl <- "http://thedataweb.rm.census.gov/pub/cps/basic/201501-/"
+posturl <- "pub.dat.gz"
+year <- "16"
+
+# set up emtpy contents files
+tmp <- tempfile()
+l <- data.frame()
+
+# loop through each month
+for (n in 1:12) {
+  # construct URL with paste
+  url <- paste(baseurl, mes[n], year, posturl, sep = "")
+  # download the file
+  download.file(url,tmp)
+  # read the file
+  d <- readLines(tmp)
+
+  # determine the start and end locations for each entry based on the LOCATION
+  dic$start_loc <- as.numeric(lapply(as.character(dic$LOCATION),
+                                     function(x) strsplit(x, "-")[[1]][1]))
+  dic$stop_loc <- as.numeric(lapply(as.character(dic$LOCATION),
+                                    function(x) strsplit(x, "-")[[1]][2]))
+  
+  # set up an empty data frame with
+  data <- matrix(data = NA, nrow = length(d), ncol = nrow(dic))
+  data <- as.data.frame(data)
+  names(data) <- dic$NAME
+  
+  # iterate through each observation and gather appropriate data into cells
+  for(i in 1:nrow(dic)){
+    start_loc <- dic$start_loc[i]
+    stop_loc <- dic$stop_loc[i]
+    col <- as.character(dic$NAME[i])
+    data[,col] <- substr(d, start_loc, stop_loc)
+  }
+  
+  # append the data to the end of the main dataset
+  l <- rbind(l, data)
+  # progress update
+  print(paste("done with ", n, sep = ""))
+}
+
+# display first 5 columns and rows
+head(l)
+
+# save the data
+save(l, file = "/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/2016.RData", compress = TRUE)
+```
+### Process the Data
+
+In order to use the data for divorce predictions, we need to ensure we only use valid data, so we need to drop observations such as surveys that weren't fully completed, or observations for people under the age of 18.  
+
+In addition, we need to transform the data, factorizing the information that is provided in categories, such as marital status.
+```{r}
+# load the data from before
+pt <- proc.time()[3]
+load("/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/2016.RData")
+proc.time()[3] - pt
+
+# convert all column names to lowercase
+names(l) <- tolower(names(l))
+
+# ------------------------------------ Cull Data -----------------------------|
+
+# Select which variables are useful
+code <- c("hrhhid", "hrhhid2", "hwhhwtln", "pulineno", "hrmonth", "hryear4", "hurespli", "hufinal", "huspnish", "hetenure", "hehousut", "hefaminc", "hrnumhou", "hubus", "gereg", "gediv", "gtcbsast", "gtmetsta", "gtindvpc", "gtcbsasz", "prtage", "prtfage", "pemaritl", "pesex", "peafever", "peafnow", "peeduca", "ptdtrace", "prdthsp", "pehspnon", "prcitshp", "prinusyr", "pemlr", "puwk", "pubus1", "pubus2ot", "puretot", "pudis", "peret1", "pudis1", "puabsot", "pulay", "pemjot", "pemjnum", "pehrftpt", "pehruslt", "pehrwant", "pehrrsn1", "pehrrsn2", "pehrrsn3", "puhroff1", "puhrot1", "puhrot2", "pehractt", "pulk", "pedwwnto", "prcivlf", "prdisc", "prftlf", "prwksch", "prwkstat", "prmjind1", "prmjocc1", "penlfact", "prchld", "prnmchld", "pedisear", "pediseye", "pedisrem", "pedisphy", "pedisdrs", "pedisout", "pepdemp1")
+
+# Subset to the desired variables
+data <- l[code]
+
+# convert the data to all numeric values
+for (n in names(data)) {
+  data[[n]] <- as.numeric(data[[n]])
+}
+
+# Get rid of any observations that don't have a line number
+data <- data[data$pulineno > 0, ]
+
+# Keep only complete surveys
+data <- data[data$hufinal %in% c(1, 201), ]
+
+# Keep only people 18 years and older
+data <- data[data$prtage > 17, ]
+
+# reverse sort by month to only keep the latest observation from 2016
+data <- data[order(-as.numeric(data$hrmonth)), ]
+
+data <- data[!duplicated(cbind(data$hrhhid, data$pulineno,
+                               data$hrmonth, data$hufinal)),]
+
+# Convert all negative values to NAs
+for (n in names(data)) {
+  data[[n]][data[[n]] < 0] <- NA
+}
+
+# Recode & Factorize marital status
+data$mstatus[data$pemaritl %in% c(1, 2, 3)] <- "married"
+data$mstatus[data$pemaritl %in% c(4, 5)] <- "divorced"
+data$mstatus[data$pemaritl == 6] <- "single"
+data$pemaritl <- factor(data$mstatus)
+data$mstatus <- NULL
+# show distrubution of marriage status
+table(data$pemaritl, useNA = "ifany")
+
+# Save the numeric data frame before we factorize the rest of the factor vars
+data.numeric <- data
+
+# Variables to Factorize (all variables that are not numeric as listed below)
+facs <- names(data)[!(names(data) %in% c("hrhhid", "hryear4", "hrnumhou",
+                                         "prtage", "pemjnum", "pehruslt",
+                                         "puhrot2", "pehractt", "prnmchld"))]
+
+# Loop through each variable to factorize
+for (n in facs) {
+  data[[n]] <- factor(data[[n]])
+}
+
+head(data)
+
+save(data, file = "/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/data.RData", compress = TRUE)
+```
+### Run Decision Tree
+
+First we divide the data randomly into 2 separate parts, train and test, with an approximate 70/30 split. From there, we train the decision tree model using a selected set of variables from the original set. This set of variables was chosen from multiple tests with different combinations, as well as culling certain variables that are explicitly related to marriage status.
+```{r}
+load("/Users/cueland/Google Drive/School/670 - Data Science/divorce-prediction/data.RData")
+
+# -------------------------------- Train and Test ----------------------------|
+
+# Set up subset to roughly 70%
+set.seed(12345)
+train <- runif(nrow(data))
+train <- train > 0.7
+
+# Create separate train and test sets
+data.train <- data[train, ]
+head(data.train[1:6])
+data.test <- data[!train, ]
+head(data.test[1:6])
+
+# Run the test with the best variables (determined by previous runs)
+pt <- proc.time()[3]
+fit <- rpart(pemaritl ~ prtage + hrnumhou + prchld + prnmchld + pemlr + puwk +
+               hefaminc + prtfage + prwksch + prcivlf + prwkstat + peeduca +
+               ptdtrace + prinusyr + pesex + gtindvpc + prcitshp + hurespli +
+               hehousut + gtcbsast + peafever + prmjind1 + gtcbsasz + gediv +
+               huspnish + pehspnon + penlfact + gtmetsta + peafnow + gereg +
+               prmjocc1 + prftlf + pedisear + hubus + pedisrem,
+             method = "class", data = data.train, cp = 0)
+proc.time()[3] - pt
+
+# determine which variables were the most useful
+useful.vars <- data.frame(name = attr(fit$variable.importance, "names"),
+                          importance = fit$variable.importance,
+                          row.names = NULL)
+useful.vars
+# printcp(fit)
+
+# backup the file
+save(fit, file = "fit.RData", compress = TRUE)
+save(data, data.test, data.train, file = "data_complete.RData", compress = TRUE)
+```
+### Optimization
+Because we ran the model with CP = 0 (the most complex), we can subsequently simplify, or "prune", the decision tree model in order to avoid over-fitting the model to the train data. We use two approaches for this. 
+
+#### XERROR
+First, we examine the XERROR of each level of complexity and prune to the level that offers the lowers XERROR value.
+```{r}
+# load("fit.RData")
+# load("data_complete.RData")
+
+# Test the predictions for the train subset (this is arguably uneccessary)
+data.train$predict <- predict(fit, data.train, type= "class")
+meanf1(data.train$predict, data.train$pemaritl)
+
+# Test the predictions for the test subset for CP = 0
+data.test$predict <- predict(fit, data.test, type= "class")
+meanf1(data.test$predict, data.test$pemaritl)
+
+# ------------------------------ min XERROR (mincp) ---------------------------|
+# determine the CP that yields the minimum XERROR value 
+mincp <- fit$cptable[fit$cptable[, 4] == min(fit$cptable[, 4]), 1]
+if (length(mincp) > 1) {
+  fit$cptable[fit$cptable[, 4] == min(fit$cptable[, 4]), ]
+  mincp <- mincp[1]
+}
+
+# prune to the CP that yielded the min XERROR value, mincp
+fit.mincp <- prune(fit, cp = mincp)
+
+# Test the predictions for the test subset for CP = mincp
+data.test$predict.mincp <- predict(fit.mincp, data.test, type= "class")
+meanf1(data.test$predict.mincp, data.test$pemaritl)
+```
+#### Iteration
+Second, we use an iterative approach to determine which level of pruning yields the highest mean F1, which is our measure of best fit. This is done with a series of two loops, the first to find a rough estimate of the best CP value, and the second to further refine the CP value. This yields a mean F1 score for the test subset of 0.812.
+```{r}
+# --------------------------- Max F1 for test subset --------------------------|
+
+# try pruning with different CP values to find maximal mean F1 on the test set
+cp1 <- 0.1
+f1s <- vector(length = 0)
+cp.vector <- cp1
+
+# Rough preliminary iteration
+# iterate from 0.1 to 1e-13 finding F1 scores
+while (cp1 > 0.0000000000001) {
+  fit.best <- prune(fit, cp = cp1)
+  data.test$predict.best <- predict(fit.best, data.test, type= "class")
+  f1s <- c(f1s, meanf1(data.test$predict.best, data.test$pemaritl))
+  cp1 <- cp1 / 5 # new CP is old CP divided by 5
+  cp.vector <- c(cp.vector, cp1)
+}
+
+# find max mean F1 and corresponding before and after values for further iteration
+max.f1 <- (1:length(f1s))[f1s == max(f1s)] # find index of max value
+next.it <- cp.vector[c(max.f1 - 1, max.f1 + 1)] # find before and after CP values
+
+# Refined secondary iteration
+f1s <- vector(length = 0)
+for (cp1 in inter(next.it[1],next.it[2], 10)) { # see inter function above
+  fit.best <- prune(fit, cp = cp1)
+  data.test$predict.best <- predict(fit.best, data.test, type= "class")
+  f1s <- c(f1s, meanf1(data.test$predict.best, data.test$pemaritl))
+}
+
+# create data frame with results to see how optimization worked
+f1s.refined <- data.frame(CP = rev(inter(next.it[1],next.it[2], 10)),
+                          mean_F1 = rev(f1s))
+f1s.refined
+plot(f1s.refined)  # plot optimization
+# assign best CP value
+cp.best <- f1s.refined[,1][f1s.refined[,2] == max(f1s.refined[,2])]
+# find optimal fit
+fit.best <- prune(fit, cp = cp.best)
+useful.vars.best <- data.frame(name = attr(fit.best$variable.importance,
+                                           "names"),
+                          importance = fit.best$variable.importance,
+                          row.names = NULL)
+useful.vars.best
+# Show further simplified decision tree graphic
+fit.simple <- prune(fit, cp = 0.005)
+rpart.plot(fit.simple, shadow.col = "grey", nn = TRUE)
+
+# Test the predictions for the test subset for CP = mincp
+data.test$predict.best <- predict(fit.best, data.test, type= "class")
+meanf1(data.test$predict.best, data.test$pemaritl)
+```
+
