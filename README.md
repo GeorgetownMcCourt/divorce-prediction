@@ -11,7 +11,7 @@ The goal of this project is to find a model that accurately predicts if a person
 
 We are ceating a tool that accurate predicts if your are marriage status. Wether you are divorced, single or married, this tool will predict with an accuracy in the 80s percentage, given certain characteristics.  
 
-We use decision trees model to predict the outcomes (divorced, single or married). We create a prediction with CP = 0 (most precise and really high computing power). After it, we create a loop and start "pruning" the tree with it, in order to get the highest mean F1 and CP possible. As it turns out, our mean F1 on the the test sample is around 81% with a CP = XXx10^(-5).
+We use decision trees model to predict the outcomes (divorced, single or married). We create a prediction with CP = 0 (most precise and really high computing power). After it, we create a loop and start "pruning" the tree with it, in order to get the highest mean F1 and CP possible. As it turns out, our mean F1 on the the test sample is around 81% with a CP = 2.176e^(-5).
 
 
 ### Data Used
