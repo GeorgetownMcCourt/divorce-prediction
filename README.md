@@ -21,7 +21,7 @@ We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ft
 We have approximately 1.8 million observations and 389 variables. From those 389 variables available in the dataset we use 35 variables to predict the outcome. These are the variables used with their importance:
 
 
-***  varname |	importance | DESCRIPTION ***
+***varname*** |	***importance*** | ***DESCRIPTION***
 --- | --- | ---
 prtage |	48027.2043 |	PERSONS AGE  
 hrnumhou |	19580.93662 |	TOTAL NUMBER OF PERSONS LIVING 
@@ -77,7 +77,7 @@ This file project was broken down into 7 main parts
 
 
 
-*** NOTE: in order for this script to work working directory and paths in the files must be updated to fit the user***
+***NOTE:*** in order for this script to work working directory and paths in the files must be updated to fit the user
 
 
 
