@@ -21,7 +21,7 @@ We use the Current Population Survey (http://thedataweb.rm.census.gov/ftp/cps_ft
 We have approximately 1.8 million observations and 389 variables. From those 389 variables available in the dataset we use 35 variables to predict the outcome. These are the variables used with their importance:
 
 
-varname |	importance | DESCRIPTION
+***  varname |	importance | DESCRIPTION ***
 --- | --- | ---
 prtage |	48027.2043 |	PERSONS AGE  
 hrnumhou |	19580.93662 |	TOTAL NUMBER OF PERSONS LIVING 
@@ -56,21 +56,37 @@ penlfact |	106.0165516 |	WHAT BEST DESCRIBES YOUR SITUATION AT
 pehspnon |	85.31919456 |	HISPANIC OR NON-HISPANIC
 pedisrem |	65.85950161 |	BECAUSE OF A PHYSICAL, MENTAL, OR 
 hubus |	49.12820317 |	DOES ANYONE IN THIS HOUSEHOLD
-pedisear |	17.44051162 |	ISü¾“ ¼DEAF OR DOESü¾“ ¼HAVE SERIOUS
+pedisear |	17.44051162 |	IS...DEAF OR DOES...HAVE SERIOUS DIFFICULTY HEARING?
 prftlf |	9.76262516 |	FULL TIME LABOR FORCE
-
-
 
 The parsing script also creates a dictonary for these variables.
 
 ### Usage
-Open the .R file and run the script.
+
+Our project can be checked in the divorce-prediction.Rmd file.
+
+This file project was broken down into 7 main parts
+
+- 1 Installing all the libraries needed.
+- 2 Declaring functions that will be used in other parts of the project.
+- 3 Creating a Data Dictionary.
+- 4 Downloading the data.
+- 5 Culling and cleaning the data.
+- 6 Training the model.
+- 7 Testing the model.
+
+
+
+*** NOTE: in order for this script to work working directory and paths in the files must be updated to fit the user***
+
 
 
 ### Progress Log
 - April 17, 2017: We started wrinting our read-me file and gathering the data.
 - April 20, 2017: Updates on Read-me file.
 - April 24, 2017: Finishing Read-me file.
+- April 30, 2017: Finishing the code.
+- May 8, 2017: Code Finished and Read-Me Finished.
 
 ### Credits
 
